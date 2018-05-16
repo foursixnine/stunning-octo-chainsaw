@@ -1,0 +1,101 @@
+package Foursixnine::Phalanx::Bot;
+use feature qw(say switch state);
+use WWW::Telegram::BotAPI;
+use Mojo::Base;
+use Mojo::IOLoop;
+use Mojo::IOLoop::ReadWriteProcess qw(process);
+use Mojo::File qw(path);
+
+use constant TELEGRAM_TOKEN => $ENV{PHALANX_TELEGRAM_TOKEN};
+
+my $api = WWW::Telegram::BotAPI->new (
+    token => TELEGRAM_TOKEN,
+    async => 1
+);
+# The API methVods die when an error occurs.
+# Fetch bot information asynchronously
+$api->getMe (wrap_async (sub {
+    my $me = shift;
+    say "Telegram bot << $me->{'first_name'} >> initialized and ready to fetch updates!";
+    fetch_updates();
+}));
+
+Mojo::IOLoop->start;
+
+
+# Async update handling
+sub fetch_updates {
+    state $offset = 0;
+    $api->getUpdates ({
+        'timeout' => GET_UPD_TIMEOUT,
+        'allowed_updates' => ['message'], # remove me in production if you need multiple update types
+        $offset ? ('offset' => $offset) : ()
+    } => wrap_async (sub {
+        my $updates = shift;
+        for my $update (@$updates) {
+            say "Received update: ".JSON::XS->new->utf8->pretty->encode($update);
+            $offset = $update->{'update_id'} + 1 if $update->{'update_id'} >= $offset;
+            # Handle text messages. No checks are needed because of `allowed_updates`
+            my $message=$update->{'message'};
+            my $message_text = $message->{'text'};
+            printf "> Incoming message from \@%s at %s\n",
+                join(' ', @{$message->{'from'}}{map $_.'_name', qw(first last"),}), scalar localtime;
+            say ">> $message_text";
+            # For this example, we're just going to handle messages containing '/say something'
+            if ($message_text =~ m!^/say(?:\s+(.*))?$!i) {
+                # For this example, we don't care about the result of sendMessage.
+                $api->sendMessage ({
+                    'chat_id' => $message->{'chat'}{'id'},
+                    'text'    => $1?'You say: '.$1:'Oh, you do you really have nothing to say?'
+                } => sub { say "> Replied at ", scalar localtime })
+            }
+            if ($message_text eq '/uptime') {
+                # For this example, we don't care about the result of sendMessage.
+		my $return = process( execute => '/usr/bin/uptime' )->args(qw(-p))->start()->wait_stop->read_all_stdout;
+		chomp $return;
+		my $hostname = process( execute => '/bin/hostname' )->start()->wait_stop->read_all_stdout;
+		chomp $hostname;
+		my $username = process( execute => '/usr/bin/whoami' )->start()->wait_stop->read_all_stdout;
+		chomp $username;
+                $api->sendMessage ({
+                    'chat_id' => $message->{'chat'}{'id'},
+                    'text'    => sprintf 'Hi %s, node [%s@%s] is %s.', $message->{'from'}{'username'}, $username, $hostname, $return
+                } => sub { say "> Replied at ", scalar localtime })
+            }
+            if ($message_text eq '/poll') {
+		$api->sendMessage ({
+		    chat_id      => $message->{'chat'}{'id'},
+		    # Object: ReplyKeyboardMarkup
+		    text => 'inline buttons test',
+		    reply_markup => { 
+		    inline_keyboard => [
+			[
+				{ url => 'https://foursixnine.io', switch_inline_query => undef, text => sprintf 'Visit me %s!', $message->{'from'}{'username'}}
+			],
+		    ]
+		    }});
+	    }
+        }
+        # Run the request again using ourselves as the handler :-)
+        fetch_updates();
+    }));
+};
+
+sub wrap_async {
+    my $callback = shift;
+    sub {
+        my (undef, $tx) = @_;
+        my $response = eval { $tx->res->json } || {};
+        unless (ref $response eq 'HASH' && %{$response} && $tx->success && $response->{'ok'}) {
+            # TODO: if using this in production code, do NOT die on error, but handle them
+            # gracefully
+            say "ERROR: ", ($response->{'error_code'} ? "code $response->{'error_code'}: " : ""),
+                $response->{'description'} ?
+                    $response->{'description'} :
+                    ($tx->error || {})->{'message'} || "something went wrong (for some unknown reasons :) )!";
+            Mojo::IOLoop->stop;
+            exit
+        }
+        $callback->($response->{'result'});
+    }
+}

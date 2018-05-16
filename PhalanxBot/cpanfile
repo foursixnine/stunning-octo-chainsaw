@@ -1,0 +1,4 @@
+requires 'WWW::Telegram::BotAPI';
+requires 'Mojo::IOLoop';
+requires 'Mojo::IOLoop::ReadWriteProcess';
+requires 'Mojo::File';
