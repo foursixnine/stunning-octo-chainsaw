@@ -1,30 +1,35 @@
 package Foursixnine::Phalanx::Bot;
 use feature qw(say switch state);
 use WWW::Telegram::BotAPI;
-use Mojo::Base;
+use Carp;
+use Mojo::Base -strict;
 use Mojo::IOLoop;
 use Mojo::IOLoop::ReadWriteProcess qw(process);
 use Mojo::File qw(path);
 
-use constant TELEGRAM_TOKEN => $ENV{PHALANX_TELEGRAM_TOKEN};
+use constant TELEGRAM_TOKEN => $ENV{PHALANX_TELEGRAM_TOKEN} or croak('PHALANX_TELEGRAM_TOKEN environment variable not defined');
 
-my $api = WWW::Telegram::BotAPI->new (
-    token => TELEGRAM_TOKEN,
-    async => 1
-);
-# The API methVods die when an error occurs.
+has api = sub {
+    WWW::Telegram::BotAPI->new (
+        token => TELEGRAM_TOKEN,
+        async => 1
+    );
+};
+
+# The API methods die when an error occurs.
 # Fetch bot information asynchronously
-$api->getMe (wrap_async (sub {
+
+$self->api->getMe (wrap_async (sub {
     my $me = shift;
     say "Telegram bot << $me->{'first_name'} >> initialized and ready to fetch updates!";
-    fetch_updates();
+    $self->fetch_updates();
 }));
 
 Mojo::IOLoop->start;
 
-
 # Async update handling
 sub fetch_updates {
+    my $self = @_;
     state $offset = 0;
     $api->getUpdates ({
         'timeout' => GET_UPD_TIMEOUT,
@@ -48,32 +53,30 @@ sub fetch_updates {
                     'chat_id' => $message->{'chat'}{'id'},
                     'text'    => $1?'You say: '.$1:'Oh, you do you really have nothing to say?'
                 } => sub { say "> Replied at ", scalar localtime })
-            }
-            if ($message_text eq '/uptime') {
+            } if ($message_text eq '/uptime') {
                 # For this example, we don't care about the result of sendMessage.
-		my $return = process( execute => '/usr/bin/uptime' )->args(qw(-p))->start()->wait_stop->read_all_stdout;
-		chomp $return;
-		my $hostname = process( execute => '/bin/hostname' )->start()->wait_stop->read_all_stdout;
-		chomp $hostname;
-		my $username = process( execute => '/usr/bin/whoami' )->start()->wait_stop->read_all_stdout;
-		chomp $username;
+                my $return = process( execute => '/usr/bin/uptime' )->args(qw(-p))->start()->wait_stop->read_all_stdout;
+                chomp $return;
+                my $hostname = process( execute => '/bin/hostname' )->start()->wait_stop->read_all_stdout;
+                chomp $hostname;
+                my $username = process( execute => '/usr/bin/whoami' )->start()->wait_stop->read_all_stdout;
+                chomp $username;
                 $api->sendMessage ({
                     'chat_id' => $message->{'chat'}{'id'},
                     'text'    => sprintf 'Hi %s, node [%s@%s] is %s.', $message->{'from'}{'username'}, $username, $hostname, $return
                 } => sub { say "> Replied at ", scalar localtime })
-            }
-            if ($message_text eq '/poll') {
-		$api->sendMessage ({
-		    chat_id      => $message->{'chat'}{'id'},
-		    # Object: ReplyKeyboardMarkup
-		    text => 'inline buttons test',
-		    reply_markup => { 
-		    inline_keyboard => [
-			[
-				{ url => 'https://foursixnine.io', switch_inline_query => undef, text => sprintf 'Visit me %s!', $message->{'from'}{'username'}}
-			],
-		    ]
-		    }});
+            } if ($message_text eq '/poll') {
+                $api->sendMessage ({
+                    chat_id      => $message->{'chat'}{'id'},
+                    # Object: ReplyKeyboardMarkup
+                    text => 'inline buttons test',
+                    reply_markup => {
+                    inline_keyboard => [
+                    [
+                        { url => 'https://foursixnine.io', switch_inline_query => undef, text => sprintf 'Visit me %s!', $message->{'from'}{'username'}}
+                    ],
+                    ]
+                }});
 	    }
         }
         # Run the request again using ourselves as the handler :-)
@@ -82,7 +85,7 @@ sub fetch_updates {
 };
 
 sub wrap_async {
-    my $callback = shift;
+    my ($slef, $callback) = @_;
     sub {
         my (undef, $tx) = @_;
         my $response = eval { $tx->res->json } || {};
@@ -98,4 +101,11 @@ sub wrap_async {
         }
         $callback->($response->{'result'});
     }
+}
+
+sub command_handler {
+    my ($self, $command){
+        ...;
+    }
+
 }
