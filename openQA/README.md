@@ -1,6 +1,8 @@
 ### Generate changelog
 `git shortlog hash1..hash2 | grep Merge | sed 's=^.*#\(.*\) from.*=https://github.com/os-autoinst/openQA/pull/\1=g' | xargs -I {} nokogiri -e 'puts " * {} - " + $_.xpath("//title").text.split("·")[0]' {}`
 
+If you want to make your life even easier: `bash deltaforce.sh 58d02775 24ee0a3e` where first parameter is [os-autoinst](https://github.com/os-autoinst/os-autoinst) hash and second one would be [openQA](https://github.com/os-autoinst/openQA) git hash
+
 ### Deleting or cancelling jobs that were created by clonejob: (in bulk)
 
 cat to_delete:
