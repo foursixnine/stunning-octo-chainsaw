@@ -2,3 +2,6 @@ requires 'WWW::Telegram::BotAPI';
 requires 'Mojo::IOLoop';
 requires 'Mojo::IOLoop::ReadWriteProcess';
 requires 'Mojo::File';
+requires 'Test::More';
+requires 'Twitter::API';
+requires 'Text::SimpleTable::AutoWidth';
