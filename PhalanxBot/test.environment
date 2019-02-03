@@ -1,0 +1,18 @@
+# Keys and tokens
+
+#Keys, secret keys and access tokens management.
+#Consumer API keys
+
+export TWITTER_CONSUMER_APIKEY=$YOURKEYHERE
+
+export TWITTER_CONSUMER_APISECRET=YOURSECRETHERE
+
+
+#Access token & access token secret
+
+export TWITTER_CONSUMER_ACCESSTOKEN=TOKENGOESHERE
+
+export TWITTER_CONSUMER_ACCESSTOKEN_SECRET=TOKENSECRET
+
+# Read-only (Access level)
+export TELEGRAM_KEY=TELEGRAMKEYGOESHERE
