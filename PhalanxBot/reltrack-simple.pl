@@ -53,17 +53,24 @@ sub get_followers {
     my $counter = 0;
     # get the first page of the followers
     while (my $request = $client->followers($args)){
+        $counter++;
         my @new_followers = @{$request->{users}};
+
         push  @followers, @new_followers;
         $cursor = $args->{cursor} = $request->{next_cursor};
+
         say "Got  " . scalar @new_followers . " and next cursor is at $cursor if non 0, sleeping ($counter) ";
-        last if $cursor == 0;
+        #last if $cursor == 0;
+        #next if $cursor == -1; # Don't limit on the first cursor
+
         # We don't sleep in the first cursor
-        if ($cursor > 0 && !($counter++ % 5 == 0)){
-            say 'Sleeping 300 seconds due to every 5'. $counter; 
+        if ( $cursor > 0 && (($counter % 5) == 0)){
+            say 'Sleeping 300 seconds due to every 5 '. $counter .' - ' . ($counter % 5).'  -  cursor at: ' . $cursor;
             sleep 300;
+        } else {
+            sleep 5; # Let's not spam twitter ok?.
         }
-        sleep 10;
+
     }
 
     return @followers;
