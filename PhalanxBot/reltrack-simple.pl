@@ -20,10 +20,10 @@ my $handle    = 0;
 my $directory = 'data';
 my $display   = 0;
 GetOptions(
-    'help|h|?'            => \$help,
+    'help|h|?'        => \$help,
     'handle|user|u:s' => \$handle,
-    'directory|d'       => \$directory,
-    'show|s'            => \$show
+    'directory|d'     => \$directory,
+    'show|s'          => \$show
 );
 
 pod2usage( -verbose => 2 ) if $help;
@@ -46,8 +46,7 @@ my $path = path( $directory, $handle );
 mkdir $path or die( 'Cannot create directory: ' . $path ) unless -d $path;
 
 my @followers = get_followers($client);
-path( $directory, $handle, time() . ".json" )
-  ->spurt( encode_json( { followers => \@followers } ) );
+path( $directory, $handle, time() . ".json" )->spurt( encode_json( { followers => \@followers } ) );
 display_followers(@followers) if $show;
 
 sub display_followers {
@@ -61,6 +60,7 @@ sub display_followers {
 }
 
 sub get_followers {
+
     # $client and $handle are globals for the time being
     my @followers;
     my $cursor       = -1;
@@ -75,6 +75,7 @@ sub get_followers {
     };
     local $| = 1;
     my $counter = 0;
+
     # get the first page of the followers
 
     while ( my $request = $client->followers($args) ) {
@@ -85,8 +86,8 @@ sub get_followers {
         $cursor = $args->{cursor} = $request->{next_cursor};
 
         say "Got  "
-          . scalar @new_followers
-          . " and next cursor is at $cursor if non 0, sleeping ($counter)";
+            . scalar @new_followers
+            . " and next cursor is at $cursor if non 0, sleeping ($counter)";
 
         last if $cursor == 0;     #it's the last cursor, so let's leave
         next if $cursor == -1;    # Don't limit on the first cursor
@@ -94,13 +95,12 @@ sub get_followers {
         # We don't sleep in the first cursor
         if ( $cursor > 0 && ( ( $counter % 5 ) == 0 ) ) {
             say 'Sleeping 300 seconds due to every 5 '
-              . $counter . ' - '
-              . ( $counter % 5 )
-              . '  -  cursor at: '
-              . $cursor;
+                . $counter . ' - '
+                . ( $counter % 5 )
+                . '  -  cursor at: '
+                . $cursor;
             sleep 300;
-        }
-        else {
+        } else {
             sleep 5;              # Let's not spam twitter ok?.
         }
     }

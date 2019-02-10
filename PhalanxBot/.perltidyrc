@@ -1,0 +1,21 @@
+-pbp     # Start with Perl Best Practices
+-nst     # Avoid sending the data to standard output
+-iob     # Ignore old breakpoints
+-l=100   # 80 characters per line
+-bar     # Brace always on the right 
+-iscl    # Ignore line lenght for comments
+-dt=4   # Tab size
+-mbl=1   # No more than 2 blank lines
+-i=4     # Indentation is 2 columns
+-ci=4    # Continuation indentation is 2 columns
+-vt=0    # Less vertical tightness
+-pt=1    # High parenthesis tightness
+-bt=1    # High brace tightness
+-sbt=3   # High square bracket tightness
+-wn      # Weld nested containers
+-isbc    # Don't indent comments without leading space
+-ce      # Cuddle else and if-elsif-else
+-cb      #  see above
+-bbs     # Add blank line before subs and packages
+-bbb     # Add blank line between major blocks
+-nt      # No tabs

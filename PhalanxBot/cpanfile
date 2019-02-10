@@ -3,6 +3,14 @@ requires 'Mojo::IOLoop';
 requires 'Mojo::IOLoop::ReadWriteProcess';
 requires 'Mojo::JSON';
 requires 'Mojo::File';
-requires 'Test::More';
 requires 'Twitter::API';
 requires 'Text::SimpleTable::AutoWidth';
+requires 'Getopt::Long';
+
+on 'test' => sub {
+    requires 'Perl::Critic::Freenode';
+    requires 'Perl::Critic';
+    requires 'Perl::Tidy';
+    requires 'Test::More';
+    requires 'Test::Mojo';
+};
