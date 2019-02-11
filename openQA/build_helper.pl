@@ -8,7 +8,13 @@ use Getopt::Long;
 
 my %options;
 
-GetOptions(\%options, "h|hostname=s", "BUILD|b=s", "BUILD_SDK|s=s", "ARCH|a=s", "name|n=s", "worker|w=s",
+GetOptions(\%options, "h|hostname=s", 
+    "BUILD|b=s",
+    "BUILD_SDK|s=s",
+    "ARCH|a=s",
+    "name|n=s",
+    "VERSION|v=s",
+    "worker|w=s",
     "EXTRAPARAMS|e=s")
   or die("options missing?");
 
@@ -39,7 +45,7 @@ $ua->on(
 $options{hostname} ||= "https://openqa.suse.de";
 my $base_url = new Mojo::URL->new($options{hostname});    #"${hostname}/assets/";
 
-$options{worker}    or die("Worker class has to be set (use -w or --worker");
+$options{VERSION}   or die("Build not defined (use -v or --VERSION");
 $options{BUILD}     or die("Build not defined (use -b or --BUILD");
 $options{BUILD_SDK} or die("Build not defined (use -s or --BUILD_SDK");
 my $build_name = ($options{name}) ? $options{name} . "_" . $options{BUILD} : $options{BUILD};
@@ -48,7 +54,7 @@ my $asset_url;
 my $result;
 $options{ARCH} or die("Build not defined (use -a or --ARCH");
 
-my $iso_asset_name = "SLE-12-SP3-Server-DVD-" . $options{ARCH} . "-Build" . $options{BUILD} . "-Media1.iso";
+my $iso_asset_name = 'SLE-'.$options{VERSION}.'-Server-DVD-' . $options{ARCH} . '-Build' . $options{BUILD_SDK} . '-Media1.iso';
 $asset_url = $base_url->path("/assets/iso/")->path($iso_asset_name);
 
 unless (-e "/var/lib/openqa/factory/iso/$iso_asset_name") {
@@ -61,7 +67,7 @@ unless (-e "/var/lib/openqa/factory/iso/$iso_asset_name") {
     }
 }
 
-my $sdk_asset_name = "SLE-12-SP3-SDK-DVD-" . $options{ARCH} . "-Build" . $options{BUILD_SDK} . "-Media1.iso";
+my $sdk_asset_name = 'SLE-'.$options{VERSION}.'-SDK-DVD-' . $options{ARCH} . '-Build' . $options{BUILD_SDK} . '-Media1.iso';
 $asset_url = $base_url->path("/assets/iso/")->path($sdk_asset_name);
 
 unless (-e "/var/lib/openqa/factory/iso/$sdk_asset_name") {
@@ -84,14 +90,14 @@ print $fd <<END;
         "FLAVOR": "Server-DVD",
         "ISO": "$iso_asset_name",
         "REPO_0": "$sdk_asset_name",
-        "ARCH": "aarch64",
+        "ARCH": "$options{ARCH}",
         "BUILD_SLE": "$options{BUILD}",
-        "VERSION": "12-SP3",
+        "VERSION": "$options{VERSION}",
         "BUILD": "$build_name"
 }
 END
 
-my @cmd = qw(./script/client isos post _DEPRIORITIZEBUILD=1);
+my @cmd = qw(openqa-client isos post _DEPRIORITIZEBUILD=1);
 push @cmd, '--params', $name;
 push @cmd, $options{EXTRAPARAMS} if $options{EXTRAPARAMS};
 push @cmd, 'WORKER_CLASS=' . $options{worker} if $options{worker};
