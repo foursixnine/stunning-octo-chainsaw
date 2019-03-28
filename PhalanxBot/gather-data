@@ -1,0 +1,47 @@
+#!/bin/bash
+let rounds=0
+
+declare -a USERS
+declare HOST
+
+if [  $# -lt 2 ]; then
+    echo "Parameters missing?"
+    exit 1
+fi
+
+while getopts "u:h:" opt; do
+  case ${opt} in
+    u ) # process user options
+      USERS+=("$OPTARG")
+      ;;
+    h ) # process host option
+      HOST=${OPTARG}
+      ;;
+    * ) echo "Usage: cmd [-h baz] -u foo -u bar"
+      exit 1;
+      ;;
+    : )
+    echo "Huh?"
+  esac
+done
+shift $((OPTIND -1))
+
+eval $(ssh-agent)
+ssh-add
+
+while true;
+    do
+        echo "Next round: $rounds"; 
+        for u in "${USERS[@]}"; do 
+            # perl reltrack-simple.pl -u $u; 
+            echo "done with $u, sleeping... 300 seconds"
+            # sleep 300;
+        done;
+        let rounds++
+        if [ ! -z $HOST ]; then
+            scp -r data/$u $HOST:~/tmp/data
+        fi
+        rm data/*/*.json
+        echo "Done for round $round, sleeping for few hours"
+        sleep 1d;
+   done;
