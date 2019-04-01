@@ -2,22 +2,30 @@
 let rounds=0
 
 declare -a USERS
-declare HOST
+declare TARGET_HOST
+declare ROUND_TIMEOUT=300
+declare NAP_TIME=1d
 
 if [  $# -lt 2 ]; then
     echo "Parameters missing?"
     exit 1
 fi
 
-while getopts "u:h:" opt; do
+while getopts "u:h:w:s" opt; do
   case ${opt} in
+    w ) # process timeout option
+      ROUND_TIMEOUT={$OPTARG}
+      ;;
+    s ) # process nap time (harvest for all users) options
+      NAP_TIME=${$OPTARG}
+      ;;
     u ) # process user options
       USERS+=("$OPTARG")
       ;;
     h ) # process host option
-      HOST=${OPTARG}
+      TARGET_HOST=${OPTARG}
       ;;
-    * ) echo "Usage: cmd [-h baz] -u foo -u bar"
+    * ) echo "Usage: cmd [-h baz] [-w 300] [ -s 1d ] -u foo -u bar"
       exit 1;
       ;;
     : )
@@ -26,22 +34,24 @@ while getopts "u:h:" opt; do
 done
 shift $((OPTIND -1))
 
-eval $(ssh-agent)
-ssh-add
+if [ -n "${TARGET_HOST}" ]; then
+    eval $(ssh-agent)
+    ssh-add
+fi;
 
 while true;
     do
-        echo "Next round: $rounds"; 
-        for u in "${USERS[@]}"; do 
-            # perl reltrack-simple.pl -u $u; 
+        echo "Next round: $rounds";
+        for u in "${USERS[@]}"; do
+            perl reltrack-simple.pl -u $u;
             echo "done with $u, sleeping... 300 seconds"
-            # sleep 300;
+            sleep $ROUND_TIMEOUT;
         done;
         let rounds++
-        if [ ! -z $HOST ]; then
-            scp -r data/$u $HOST:~/tmp/data
+        if [ -n "${TARGET_HOST}" ]; then
+            scp -r data/$u $TARGET_HOST:~/tmp/data
+            rm data/*/*.json
         fi
-        rm data/*/*.json
-        echo "Done for round $round, sleeping for few hours"
-        sleep 1d;
+        echo "Done for round $round, sleeping for $NAP_TIME"
+        sleep $NAP_TIME;
    done;
