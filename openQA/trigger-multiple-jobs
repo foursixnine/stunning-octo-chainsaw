@@ -1,0 +1,27 @@
+#!/bin/sh -e
+
+# ./trigger-multiple-jobs  https://openqa.opensuse.org/tests/128128 rogue_workqueue_bsc1126782 ${TIMES_TO_REPEAT} EXTRABOOTPARAMS=kernel.softlockup_panic=1\ softlockup_panic=1
+
+set -o pipefail
+if [ -z ${job+x} ]; then
+    job="${1:?"Job url is needed"}"
+fi
+
+if [ -z ${name+x} ]; then
+    name="${2:?"Need a shortname for ease of identification"}"
+fi
+
+if [ -z ${qty+x} ]; then
+    qty=${3:?"Need a number of times to repeat the job"}
+fi
+
+if [ -n "$dry_run" ]; then
+    echo "Asked for a dry run"
+    dry_run="echo"
+fi
+
+GROUP="${GROUP:-0}"
+dry_run="${dry_run:-""}"
+for i in $(seq -f "%03g" 1 $qty); do
+  $dry_run openqa-clone-job --within-instance  ${job%/*} --skip-chained-deps ${job##*/} TEST=${name}_$i BUILD=${name}_investigation _GROUP="0" "${@:4}"
+done
