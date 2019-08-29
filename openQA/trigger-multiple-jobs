@@ -8,11 +8,11 @@ if [ -z ${job+x} ]; then
 fi
 
 if [ -z ${name+x} ]; then
-    name="${2:?"Need a shortname for ease of identification"}"
+    name="${2:?"Need a shortname for ease of identification. Use --name"}"
 fi
 
 if [ -z ${qty+x} ]; then
-    qty=${3:?"Need a number of times to repeat the job"}
+    qty=${3:?"Need a number of times to repeat the job. Use --qty"}
 fi
 
 if [ -n "$dry_run" ]; then
