@@ -1,0 +1,71 @@
+#!/usr/bin/env perl
+# Copyright © 2019 SUSE LLC
+#
+# Copying and distribution of this file, with or without modification,
+# are permitted in any medium without royalty provided the copyright
+# notice and this notice are preserved. This file is offered as-is,
+# without any warranty
+
+use strict;
+use warnings;
+use feature 'say';
+use Data::Dumper;
+use constant DEBUG => 0;
+
+sub debug {
+    say shift if DEBUG;
+}
+
+sub _log {
+    my ($message) = @_;
+    say localtime() . " - $message"
+}
+
+sub run_oneliner {
+    my ($oneliner) = @_;
+    my $lines = {};
+    if (open(my $ONELINER, "-|", $oneliner)) {
+        while (<$ONELINER>) {
+            chomp;
+             $lines->{$_} = 1 if $_;
+        }
+        close $ONELINER;
+    } else {
+        _log "There was an error running '$oneliner': $@";
+    }
+    return $lines;
+}
+
+sub shutdown_virsh_domain {
+    my ($domain) = @_;
+    system('/usr/sbin/xl', 'destroy', $domain);
+    warn "got something?: $! $@" if $? eq -1;
+    return $?;
+}
+
+my $xen_domains_defined=run_oneliner(q(/usr/sbin/xl list | tail -n +2 | grep -v Domain-0 | awk '{ print $1 }'));
+debug "XEN: ";
+debug Dumper $xen_domains_defined if DEBUG;
+
+
+my $virsh_domains_defined=run_oneliner(q(/usr/bin/virsh list | tail -n +3 | grep -v Domain-0 | awk '{ print $2 }'));
+debug "VIRSH: ";
+debug Dumper $virsh_domains_defined;
+
+my @domains_shot_down;
+foreach my $domain (keys %{$xen_domains_defined}){
+    if (!$virsh_domains_defined->{$domain}){
+        _log "$domain is not running, it will be removed";
+    my $ret = shutdown_virsh_domain($domain);
+    if ($ret eq 0){
+            push @domains_shot_down, $domain unless $ret;
+        } else {
+            _log "[ERROR]: Not adding $domain due to errors, please run 'xl destroy $domain' manually";
+    }
+    }
+}
+
+# /usr/local/bin/clean-xen-domains | mail -r $(hostname)@openqa.suse.de -s "Xen domain cleanup "  szarate+self-monitoring@openqa.suse.de'
+foreach (@domains_shot_down) {
+    _log "[INFO] Xen $_ was shot down because it was not running in virsh";
+};
