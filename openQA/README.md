@@ -13,3 +13,12 @@ Simply pass the file to this regexp
 
 In case what you have is json:
 `cat jobs.json | jq '.results.sle[][][].x86_64.jobid' |xargs -I '{}' $OPENQA_SRC/script/client  --host https://openqa.suse.de jobs/{} delete`
+
+In case what you have, it's just the json from an url:
+```
+curl "https://openqa.suse.de/tests/overview.json?arch=&machine=\
+&modules=user_defined_snapshot&distri=sle&groupid=96&version=15-SP2\
+&build=foursixnine_163.11#" \
+| jq '.results[][][][][] | .jobid?' \
+| xargs -I {} openqa-client --host openqa.suse.de jobs/{} delete
+```
