@@ -22,3 +22,18 @@ curl "https://openqa.suse.de/tests/overview.json?arch=&machine=\
 | jq '.results[][][][][] | .jobid?' \
 | xargs -I {} openqa-client --host openqa.suse.de jobs/{} delete
 ```
+
+In case you want to trigger N jobs, I tend to use this trick:
+
+```
+for job in {1..100}; do 
+    openqa-clone-job --dir $OPENQA_SHARE/factory \
+    --within-instance openqa.suse.de  --skip-chained-deps 4037949 \
+    TEST="foursixnine_BSC_1166955_1.5GB_$job" \
+    BUILD="foursixnine_163.11" \
+    INCLUDE_MODULES=boot_to_desktop,user_defined_snapshot \ 
+    CASEDIR=https://github.com/foursixnine/os-autoinst-distri-opensuse.git#oopsitsbrokenagain \
+    _GROUP_ID=96 QEMURAM=1536; 
+done
+
+```
