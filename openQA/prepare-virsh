@@ -1,0 +1,22 @@
+BUILD=${1:-161.1}
+VERSION="15"
+SP="SP2"
+FLAVOR="Online"
+
+BUILD_NAME=$(curl -s  http://dist.suse.de/install/SLP/SLE-15-SP2-Full-TEST/x86_64/DVD1/media.1/media | head -n1 | grep "$BUILD" )
+if [ ! -z "$BUILD_NAME" ]; then
+   #virt-install --connect qemu:///system \
+    virt-install --connect qemu:///system --noautoconsole \
+    --name "SLES-${VERSION}${SP}-${BUILD}-Manual" \
+    --ram 4096 --disk size=40 --os-variant sles12sp5 \
+    --network default  \
+    -x "regurl=http://all-${BUILD}.proxy.scc.suse.de console=ttyS0 textmode=1 ssh=1 sshpassword=linux" \
+    --nographics \
+    --console pty,target_type=serial \
+    --vcpus 2 \
+    --cpu host \
+    --mac 00:00:5e:35:0b:96 \
+    --graphics vnc,listen=0.0.0.0 \
+    --extra-args 'console=ttyS0,115200n8 serial' \
+    --location http://dist.suse.de/install/SLP/SLE-${VERSION}-${SP}-Full-TEST/x86_64/DVD1
+fi
