@@ -8,7 +8,7 @@
 
 use strict;
 use warnings;
-use feature 'say';
+use feature qw(say);
 use Data::Dumper;
 use constant DEBUG => 0;
 
