@@ -23,7 +23,7 @@ curl "https://openqa.suse.de/tests/overview.json?arch=&machine=\
 | xargs -I {} openqa-client --host openqa.suse.de jobs/{} delete
 ```
 
-In case you want to trigger N jobs, I tend to use this trick:
+## In case you want to trigger N jobs, I tend to use this trick:
 
 ```
 for job in {1..100}; do 
@@ -37,3 +37,5 @@ for job in {1..100}; do
 done
 
 ```
+
+But also take a look at [trigger-multiple-jobs](trigger-multiple-jobs)
