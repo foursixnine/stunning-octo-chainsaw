@@ -23,6 +23,16 @@ curl "https://openqa.suse.de/tests/overview.json?arch=&machine=\
 | xargs -I {} openqa-client --host openqa.suse.de jobs/{} delete
 ```
 
+### Best case scenario, you have the output of an isos post
+
+Long story short, you take the values shown in ids => and use them as parameters for a for loop, i.e `3947203 .. 3947427` becomes for job in `$(seq 3947152  3947199); do ./script/client --host openqa.suse.de jobs/$job delete; done;`
+
+### Say your worst nightmare is true and you didn't save the output or you don't have it
+
+Today since I didn't have the output from the isos post command, I went on https://openqa.suse.de/admin/productlog looked for your product, copied the list of sucessful_job_ids, put them on a file and bam
+
+`cat ~/to_delete.list | xargs -I {} openqa-client --host openqa.suse.de jobs/{} delete`
+
 ## In case you want to trigger N jobs, I tend to use this trick:
 
 ```
