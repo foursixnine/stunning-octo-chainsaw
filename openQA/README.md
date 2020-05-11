@@ -33,6 +33,33 @@ Today since I didn't have the output from the isos post command, I went on https
 
 `cat ~/to_delete.list | xargs -I {} openqa-client --host openqa.suse.de jobs/{} delete`
 
+### Even easier! (Just with few more pick & axe stuff)
+
+Say that you know a bit of html, and can `left click on your product row, and get the value of data-url` that looks like this: `data-url="/api/v1/isos/547157"`
+
+Call the client, and save the output to a file: `./script/client --host openqa.suse.de isos/547157 | tee ~/data.log`
+
+Use the following file and save it as `scheduled_product_load` (I might improve this later, if this happens enough times)
+
+```perl scheduled_product_load
+use strict; 
+use warnings;
+use feature qw(say); 
+use Mojo::JSON qw(encode_json);
+
+my $stored_hash = 'my %this_hash =';
+$stored_hash = do { local $/; <STDIN> } . "; " ;
+my $restored_hash = eval $stored_hash;
+
+print encode_json($restored_hash);
+```
+
+Put it all together:
+
+`cat ~/to_delete.list | scheduled_product_load | xargs -I {} openqa-client --host openqa.suse.de jobs/{} delete`
+
+Now go for a `$DRINK`, you deserve it *sips coffee*
+
 ## In case you want to trigger N jobs, I tend to use this trick:
 
 ```
