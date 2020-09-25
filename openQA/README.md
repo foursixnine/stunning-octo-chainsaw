@@ -58,6 +58,19 @@ Put it all together:
 
 `cat ~/to_delete.list | scheduled_product_load | xargs -I {} openqa-client --host openqa.suse.de jobs/{} delete`
 
+### Even easier v2, no pick & axe needed!
+
+Go to your product log and pick the ones you want to wipe out of existence: https://openqa.suse.de/admin/productlog
+
+```
+PRODUCT_POSTS="597644 597643 597642 597641 597640 597639 597638"
+for i in $PRODUCT_POSTS; do
+  openqa-cli api -X GET -host openqa.suse.de isos/$i | \
+  jq -r '.results.successful_job_ids[] , .results.failed_job_info[].job_id | if type=="array" then .[] else . end' | sort | uniq | \
+  xargs -I {} openqa-cli api --host openqa.suse.de -X DELETE jobs/{}
+done
+```
+
 Now go for a `$DRINK`, you deserve it *sips coffee*
 
 ## In case you want to trigger N jobs, I tend to use this trick:
