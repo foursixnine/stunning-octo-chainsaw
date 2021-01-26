@@ -8,7 +8,7 @@
 
 use strict;
 use warnings;
-use feature qw(say);
+use feature 'say';
 use Data::Dumper;
 use constant DEBUG => 0;
 
@@ -36,7 +36,7 @@ sub run_oneliner {
     return $lines;
 }
 
-sub shutdown_virsh_domain {
+sub shutdown_xen_domain {
     my ($domain) = @_;
     system('/usr/sbin/xl', 'destroy', $domain);
     warn "got something?: $! $@" if $? eq -1;
@@ -56,7 +56,9 @@ my @domains_shot_down;
 foreach my $domain (keys %{$xen_domains_defined}){
     if (!$virsh_domains_defined->{$domain}){
         _log "$domain is not running, it will be removed";
-    my $ret = shutdown_virsh_domain($domain);
+    my $ret = shutdown_xen_domain($domain);
+    my $cmd = 'kill -9 $(pgrep -f qemu.*'.$domain.')';
+    run_oneliner($cmd);
     if ($ret eq 0){
             push @domains_shot_down, $domain unless $ret;
         } else {
@@ -65,7 +67,7 @@ foreach my $domain (keys %{$xen_domains_defined}){
     }
 }
 
-# /usr/local/bin/clean-xen-domains | mail -r $(hostname)@openqa.suse.de -s "Xen domain cleanup "  szarate+self-monitoring@openqa.suse.de'
+# /usr/local/bin/clean-xen-domains | mail -r $(hostname)@openqa.suse.de -s "Xen domain cleanup "  szarate+self-monitoring@suse.de'
 foreach (@domains_shot_down) {
     _log "[INFO] Xen $_ was shot down because it was not running in virsh";
 };
