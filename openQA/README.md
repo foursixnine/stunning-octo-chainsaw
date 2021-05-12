@@ -88,4 +88,21 @@ done
 
 ```
 
+## Trick for triggering verification runs is:
+
+Say you want to clone everything to your machine, and have already a list of jobs
+
+```
+JOBS_TO_CLONE="http://phobos.qa.suse.de/tests/3857563 http://phobos.qa.suse.de/tests/3857564 http://phobos.qa.suse.de/tests/3857565"
+SCHEDULE=tests/installation/bootloader_start,tests/boot/boot_to_desktop,tests/console/prepare_test_data,tests/console/consoletest_setup,tests/network/samba/samba_adcli'
+for JOB in $JOBS_TO_CLONE; do 
+    openqa-clone-job --dir /srv/data/openqa/development_basedir/openqa/share/factory --host localhost \
+    --skip-chained-deps --clone-children --show-progress $JOB TEST=samba-cli-full-run BUILD=foursixnine \
+    QEMU_DISABLE_SNAPSHOTS=1 $SCHEDULE |& tee -a alljobs.lst;
+done
+
+# generate the links in markdown mode
+grep Created alljobs.lst | sed 's/Created job #[[:digit:]]\+: \(sle.*\) ->.*t\([[:digit:]]\+\)/* [\1](http:\/\/phobos.qa.suse.de\/tests\/\2)/g'
+```
+
 But also take a look at [trigger-multiple-jobs](trigger-multiple-jobs)
