@@ -6,11 +6,11 @@ use Data::Dumper;
 
 use constant DEBUG => 0;
 
-sub get_domain_description {
+sub print_domain_description {
 	say (( caller(0) )[3]) if DEBUG;
 	my ($domain) = @_;
-	`virsh desc $domain`;
-	`virsh domiflist $domain`;
+	say `virsh desc $domain`;
+	say `virsh domiflist $domain`;
 }
 
 sub get_running_machines {
@@ -50,7 +50,7 @@ sub process_line {
 	for my $this_machine (@virsh_machines){
 		say Dumper(\$this_machine) if DEBUG;
 		say $this_machine->{domain} if DEBUG;
-		say get_domain_description($this_machine->{domain});
+		print_domain_description($this_machine->{domain});
 	}
 	my @qemu_processes = get_qemu_processes;
 	if (@virsh_machines lt @qemu_processes){
