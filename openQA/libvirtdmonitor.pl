@@ -10,6 +10,7 @@ sub get_domain_description {
 	say (( caller(0) )[3]) if DEBUG;
 	my ($domain) = @_;
 	`virsh desc $domain`;
+	`virsh domiflist $domain`;
 }
 
 sub get_running_machines {
@@ -43,7 +44,7 @@ sub get_qemu_processes {
 sub process_line {
 	say (( caller(0) )[3]) if DEBUG;
 	my ($line) = @_;
-	say $line;
+	say "BEGIN PROCESSING:\t$line";
 	say get_ip_data;
 	my @virsh_machines = get_running_machines;
 	for my $this_machine (@virsh_machines){
@@ -55,8 +56,11 @@ sub process_line {
 	if (@virsh_machines lt @qemu_processes){
 		warn "There are less virsh domains than machines running, might be a problem";
 	}
+	say "FINISH PROCESSING:\t$line";
 }
 
 while(<>){
+	# screen -S bobby -L
+	# journalctl -fu libvirtd | perl libvirtdmonitor.pl
 	process_line $_ if $_ =~ /Address already in use/
 }
