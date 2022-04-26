@@ -106,3 +106,15 @@ grep Created alljobs.lst | sed 's/Created job #[[:digit:]]\+: \(sle.*\) ->.*t\([
 ```
 
 But also take a look at [trigger-multiple-jobs](trigger-multiple-jobs)
+
+## Move a build into the fixed asset directory
+
+You can easily move a full build with all it's assets to the fixed directory by calling the following script:
+
+```bash
+bash build-to-fixed.sh 15.3 38.1 GM-QU cryptlvm \*
+# fixed/opensuse-15.3-x86_64-38.1-cryptlvm@uefi.qcow2' -> `fixed/opensuse-15.3-x86_64-GM-QU-cryptlvm@uefi.qcow2
+# fixed/opensuse-15.3-x86_64-38.1-cryptlvm@uefi-uefi-vars.qcow2' -> `fixed/opensuse-15.3-x86_64-GM-QU-cryptlvm@uefi-uefi-vars.qcow2
+```
+
+It works like `$VERSION $BUILD $NEW_TAG $SCENARIO $ARCHITECTURE`, the `$BUILD` will be replaced by `$NEW_TAG`
