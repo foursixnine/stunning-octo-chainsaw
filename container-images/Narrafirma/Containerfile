@@ -1,0 +1,34 @@
+FROM registry.suse.com/bci/nodejs:latest
+MAINTAINER Santiago Zarate <santiago@zarate.co> 
+
+# Temporary superuser name and password. These should be overridden when
+# the container is run
+ENV NF_SUPERUSER superuser
+ENV NF_PASSWORD password
+ARG NF_VERSION
+# Get dependencies
+RUN npm install -g typescript
+
+RUN zypper -n ref && zypper --non-interactive in tar gzip 
+
+# Run as a non-privileged user
+RUN groupadd -r narrafirma && useradd -r -m -g narrafirma narrafirma
+USER narrafirma
+WORKDIR /home/narrafirma
+
+# Get narrafirma
+COPY v${NF_VERSION}.tar.gz narrafirma-${NF_VERSION}.tar.gz
+RUN tar -xzvf narrafirma-${NF_VERSION}.tar.gz 
+
+# Compile the javascript. true is set to allow the build to complete despite tsc errors.
+WORKDIR /home/narrafirma/narrafirma-${NF_VERSION}/webapp/js
+RUN tsc; true
+
+# A bit of cleanup, sources maybe could be cleaned up too
+USER root
+RUN zypper --non-interactive rm --clean-deps tar gzip 
+USER narrafirma
+
+# Run the application
+WORKDIR /home/narrafirma/narrafirma-${NF_VERSION}/server
+CMD node admin.js update-superuser $NF_SUPERUSER $NF_PASSWORD && node NarraFirmaServer.js
