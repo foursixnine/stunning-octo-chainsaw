@@ -1,0 +1,22 @@
+FROM opensuse/leap:latest AS WEBHOOK_BASE
+RUN zypper -n ref && zypper -n in python311
+
+# Set the working directory
+WORKDIR /opt/webhooks
+
+# Create the workspace directory
+RUN mkdir -p /opt/workspace
+
+FROM WEBHOOK_BASE AS simple_http
+
+# Set the working directory for the simple_http stage
+WORKDIR /opt/webhooks
+
+# Copy assets into the working directory
+COPY assets/ . 
+
+# Expose the port
+EXPOSE 3030
+
+# Command to run the simple HTTP server using shell form
+CMD python3.11 -m http.server 3030 --bind 0.0.0.0

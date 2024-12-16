@@ -1,0 +1,10 @@
+from opensuse/leap:latest as WEBHOOK_BASE
+RUN zypper -n ref && zypper -n in python3.11
+
+FROM WEBHOOK_BASE as simple_http
+WORKDIR /opt/webhooks
+#RUN mkdir -p /opt/workspace
+COPY assets assets
+EXPOSE 3030
+#CMD ["python3.11", "-mhttp.server" ,  "3030", ]
+CMD ["/usr/bin/python3.11", "-m", "http.server", "3030", "--bind", "0.0.0.0"]
