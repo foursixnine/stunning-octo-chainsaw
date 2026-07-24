@@ -1,0 +1,63 @@
+/usr/bin/openqa-cli api -X post isos?async=1 \
+ ARCH=x86_64 \
+ ASSET_256=openSUSE-Staging:E-Tumbleweed-Minimal-VM.x86_64-1.0.0-kvm-and-xen-Build40.8.qcow2.sha256 \
+ BUILD=E.40.8 \
+ CHECKSUM_HDD_1=$(cut -b-64 /var/lib/openqa/factory/other/openSUSE-Staging:E-Tumbleweed-Minimal-VM.x86_64-1.0.0-kvm-and-xen-Build40.8.qcow2.sha256 | grep -E '[0-9a-f]{5,40}' | head -n1) \
+ DISTRI=opensuse \
+ FLAVOR=Staging-JeOS-for-kvm-and-xen \
+ HDD_1=openSUSE-Staging:E-Tumbleweed-Minimal-VM.x86_64-1.0.0-kvm-and-xen-Build40.8.qcow2 \
+ ISO_1=openSUSE-Staging:E-Tumbleweed-DVD-x86_64-Build1230.1-Media.iso \
+ STAGING=E \
+ VERSION=Staging:E \
+ _OBSOLETE=1
+
+/usr/bin/openqa-cli api -X post isos?async=1 \
+ ARCH=x86_64 \
+ ASSET_256=openSUSE-Staging:E-MicroOS.x86_64-16.0.0-ContainerHost-kvm-and-xen-Build101.38.qcow2.sha256 \
+ BUILD=E.101.38 \
+ CHECKSUM_HDD_1=$(cut -b-64 /var/lib/openqa/factory/other/openSUSE-Staging:E-MicroOS.x86_64-16.0.0-ContainerHost-kvm-and-xen-Build101.38.qcow2.sha256 | grep -E '[0-9a-f]{5,40}' | head -n1) \
+ DISTRI=microos \
+ FLAVOR=Staging-MicroOS-Image-ContainerHost \
+ HDD_1=openSUSE-Staging:E-MicroOS.x86_64-16.0.0-ContainerHost-kvm-and-xen-Build101.38.qcow2 \
+ ISO_1=openSUSE-Staging:E-MicroOS-DVD-x86_64-Build1230.2-Media.iso \
+ STAGING=E \
+ VERSION=Staging:E \
+ _OBSOLETE=1
+
+/usr/bin/openqa-cli api -X post isos?async=1 \
+ ARCH=x86_64 \
+ ASSET_256=openSUSE-Staging:E-MicroOS.x86_64-16.0.0-kvm-and-xen-sdboot-Build101.36.qcow2.sha256 \
+ BUILD=E.101.36 \
+ CHECKSUM_HDD_1=$(cut -b-64 /var/lib/openqa/factory/other/openSUSE-Staging:E-MicroOS.x86_64-16.0.0-kvm-and-xen-sdboot-Build101.36.qcow2.sha256 | grep -E '[0-9a-f]{5,40}' | head -n1) \
+ DISTRI=microos \
+ FLAVOR=Staging-MicroOS-Image-sdboot \
+ HDD_1=openSUSE-Staging:E-MicroOS.x86_64-16.0.0-kvm-and-xen-sdboot-Build101.36.qcow2 \
+ ISO_1=openSUSE-Staging:E-MicroOS-DVD-x86_64-Build1230.2-Media.iso \
+ STAGING=E \
+ VERSION=Staging:E \
+ _OBSOLETE=1
+
+/usr/bin/openqa-cli api -X post isos?async=1 \
+ ARCH=x86_64 \
+ ASSET_256=openSUSE-Staging:E-Tumbleweed-DVD-x86_64-Build1230.1-Media.iso.sha256 \
+ BUILD=E.1230.1 \
+ CHECKSUM_ISO=$(cut -b-64 /var/lib/openqa/factory/other/openSUSE-Staging:E-Tumbleweed-DVD-x86_64-Build1230.1-Media.iso.sha256 | grep -E '[0-9a-f]{5,40}' | head -n1) \
+ DISTRI=opensuse \
+ FLAVOR=Staging-DVD \
+ ISO=openSUSE-Staging:E-Tumbleweed-DVD-x86_64-Build1230.1-Media.iso \
+ STAGING=E \
+ VERSION=Staging:E \
+ _OBSOLETE=1
+
+/usr/bin/openqa-cli api -X post isos?async=1 \
+ ARCH=x86_64 \
+ ASSET_256=openSUSE-Staging:E-MicroOS-DVD-x86_64-Build1230.2-Media.iso.sha256 \
+ BUILD=E.1230.2 \
+ CHECKSUM_ISO=$(cut -b-64 /var/lib/openqa/factory/other/openSUSE-Staging:E-MicroOS-DVD-x86_64-Build1230.2-Media.iso.sha256 | grep -E '[0-9a-f]{5,40}' | head -n1) \
+ DISTRI=microos \
+ FLAVOR=Staging-DVD \
+ ISO=openSUSE-Staging:E-MicroOS-DVD-x86_64-Build1230.2-Media.iso \
+ STAGING=E \
+ VERSION=Staging:E \
+ _OBSOLETE=1
+

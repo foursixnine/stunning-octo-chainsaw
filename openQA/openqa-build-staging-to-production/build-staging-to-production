@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+import os
+import sys
+import re
+
+def parse_staging_file(file_path):
+    with open(file_path, 'r') as f:
+        content = f.read()
+    
+    blocks_dict = {}
+    # Split by double newline to separate command blocks
+    raw_blocks = content.strip().split('\n\n')
+    for raw in raw_blocks:
+        raw = raw.strip()
+        if not raw:
+            continue
+        
+        lines = raw.split('\n')
+        block_vars = {}
+        for line in lines:
+            line = line.strip()
+            # Strip trailing backslash
+            if line.endswith('\\'):
+                line = line[:-1].strip()
+            
+            if '=' in line:
+                key, val = line.split('=', 1)
+                block_vars[key.strip()] = val.strip()
+        
+        distri = block_vars.get('DISTRI')
+        flavor = block_vars.get('FLAVOR')
+        if distri and flavor:
+            blocks_dict[(distri, flavor)] = block_vars
+            
+    return blocks_dict
+
+def get_staging_flavor_name(factory_flavor):
+    if factory_flavor == 'DVD':
+        return 'Staging-DVD'
+    if factory_flavor == 'JeOS-for-kvm-and-xen':
+        return 'Staging-JeOS-for-kvm-and-xen'
+    if factory_flavor == 'MicroOS-Image-ContainerHost':
+        return 'Staging-MicroOS-Image-ContainerHost'
+    if factory_flavor == 'MicroOS-Image-sdboot':
+        return 'Staging-MicroOS-Image-sdboot'
+    return None
+
+def process_factory_file(file_path, staging_blocks, user_build_tag, template_name, user_settings, host_val):
+    with open(file_path, 'r') as f:
+        content = f.read()
+        
+    lines = content.split('\n')
+    output_lines = []
+    
+    in_block = False
+    block_lines = []
+    
+    # We will grab staging DVD ISOs for post-processing commands if available
+    staging_opensuse_dvd_iso = staging_blocks.get(('opensuse', 'Staging-DVD'), {}).get('ISO')
+    staging_microos_dvd_iso = staging_blocks.get(('microos', 'Staging-DVD'), {}).get('ISO')
+    
+    for line in lines:
+        stripped = line.strip()
+        
+        # Check for block start
+        if stripped.startswith('/usr/bin/openqa-cli api') or stripped.startswith('openqa-cli api'):
+            in_block = True
+            block_lines = [line]
+            continue
+            
+        if in_block:
+            block_lines.append(line)
+            # A block ends if the line doesn't end with a backslash
+            if not stripped.endswith('\\'):
+                in_block = False
+                # Process the completed block
+                processed_block = process_block(block_lines, staging_blocks, user_build_tag, user_settings, host_val)
+                output_lines.extend(processed_block)
+                block_lines = []
+            continue
+            
+        # Outside of block, check for package-news script
+        if stripped.startswith('/var/lib/openqa/osc-plugin-factory/factory-package-news/factory-package-news.py'):
+            break
+            # Replace --snapshot 20260723 with --snapshot 20260723-my_build
+            line = line.replace("--snapshot 20260723", f"--snapshot 20260723-{user_build_tag}")
+            # Replace factory DVD ISO with staging DVD ISO
+            if staging_opensuse_dvd_iso:
+                line = line.replace("openSUSE-Tumbleweed-DVD-x86_64-Snapshot20260723-Media.iso", staging_opensuse_dvd_iso)
+            if staging_microos_dvd_iso:
+                line = line.replace("openSUSE-MicroOS-DVD-x86_64-Snapshot20260723-Media.iso", staging_microos_dvd_iso)
+            output_lines.append(line)
+        else:
+            output_lines.append(line)
+            
+    return '\n'.join(output_lines)
+
+def process_block(block_lines, staging_blocks, user_build_tag, user_settings, host_val):
+    # 1. Parse current block variables to find DISTRI and FLAVOR
+    block_vars = {}
+    for line in block_lines:
+        stripped = line.strip()
+        if stripped.endswith('\\'):
+            stripped = stripped[:-1].strip()
+        if '=' in stripped:
+            key, val = stripped.split('=', 1)
+            block_vars[key.strip()] = val.strip()
+            
+    distri = block_vars.get('DISTRI')
+    flavor = block_vars.get('FLAVOR')
+    
+    # 2. Check if we have a staging equivalent
+    staging_flavor = get_staging_flavor_name(flavor) if flavor else None
+    staging_block = staging_blocks.get((distri, staging_flavor)) if (distri and staging_flavor) else None
+    
+    # 3. Parse and update assignments
+    assignments = []
+    first_line = block_lines[0]
+    
+    # Replace openqa-cli call depending on host_val
+    if "/usr/bin/openqa-cli api" in first_line:
+        if host_val is None:
+            first_line = first_line.replace("/usr/bin/openqa-cli api", "/usr/bin/openqa-cli api --o3")
+        else:
+            first_line = first_line.replace("/usr/bin/openqa-cli api", f"/usr/bin/openqa-cli api --host {host_val}")
+    elif "openqa-cli api" in first_line:
+        if host_val is None:
+            first_line = first_line.replace("openqa-cli api", "openqa-cli api --o3")
+        else:
+            first_line = first_line.replace("openqa-cli api", f"openqa-cli api --host {host_val}")
+            
+    last_indent = " " # default
+    
+    for line in block_lines[1:]:
+        has_backslash = line.endswith('\\')
+        clean_line = line[:-1].rstrip() if has_backslash else line.rstrip()
+        
+        # Skip empty lines
+        if not clean_line.strip():
+            continue
+            
+        match = re.match(r"^(\s*)([A-Z0-9_]+)=(.*)$", clean_line)
+        if match:
+            indent = match.group(1)
+            key = match.group(2)
+            val = match.group(3)
+            last_indent = indent
+            
+            # Remove _OBSOLETE parameter
+            if key == '_OBSOLETE':
+                continue
+                
+            new_val = val
+            if key == 'BUILD':
+                new_val = f"{val}-{user_build_tag}"
+            elif staging_block:
+                if key == 'ISO' and 'ISO' in staging_block:
+                    new_val = staging_block['ISO']
+                elif key == 'HDD_1' and 'HDD_1' in staging_block:
+                    new_val = staging_block['HDD_1']
+                elif key == 'ASSET_256' and 'ASSET_256' in staging_block:
+                    new_val = staging_block['ASSET_256']
+                elif key == 'CHECKSUM_ISO' and 'CHECKSUM_ISO' in staging_block:
+                    new_val = staging_block['CHECKSUM_ISO']
+                elif key == 'CHECKSUM_HDD_1' and 'CHECKSUM_HDD_1' in staging_block:
+                    new_val = staging_block['CHECKSUM_HDD_1']
+                    
+            assignments.append((indent, key, new_val))
+        else:
+            # If a line doesn't match KEY=VALUE (like extra command options or comments), preserve it
+            assignments.append(line)
+            
+    # 4. Append user settings too
+    for setting in user_settings:
+        if '=' in setting:
+            key, val = setting.split('=', 1)
+            assignments.append((last_indent, key, val))
+            
+    # 5. Reconstruct block lines
+    reconstructed = [first_line]
+    
+    num_items = len(assignments)
+    for idx, item in enumerate(assignments):
+        is_last = (idx == num_items - 1)
+        if isinstance(item, tuple):
+            indent, key, val = item
+            new_line = f"{indent}{key}={val}"
+            if not is_last:
+                new_line += " \\"
+            reconstructed.append(new_line)
+        else:
+            raw_line = item.rstrip()
+            if raw_line.endswith('\\'):
+                raw_line = raw_line[:-1].rstrip()
+            if not is_last:
+                raw_line += " \\"
+            reconstructed.append(raw_line)
+            
+    return reconstructed
+
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: build-staging-to-production <staging-cmd-file> <build-tag> [flags] [settings]", file=sys.stderr)
+        print("Flags:", file=sys.stderr)
+        print("  --base           Produce base flavor calls", file=sys.stderr)
+        print("  --jeos           Produce JeOS flavor calls", file=sys.stderr)
+        print("  --microos        Produce MicroOS flavor calls", file=sys.stderr)
+        print("  --microos-qcow   Produce MicroOS QCOW flavor calls", file=sys.stderr)
+        print("  --net-agama      Produce Net Agama flavor calls", file=sys.stderr)
+        print("  --host <url>     Target a custom openQA host (defaults to --o3)", file=sys.stderr)
+        print("Settings:", file=sys.stderr)
+        print("  KEY=VALUE        Extra settings appended to block (e.g. CASEDIR=foo/bar)", file=sys.stderr)
+        sys.exit(1)
+        
+    args = sys.argv[1:]
+    staging_file = args[0]
+    user_build_tag = args[1]
+    
+    flags = []
+    user_settings = []
+    host_val = None
+    
+    i = 2
+    while i < len(args):
+        arg = args[i]
+        if arg == '--host':
+            if i + 1 < len(args):
+                host_val = args[i+1]
+                i += 2
+                continue
+            else:
+                print("Error: --host requires a value", file=sys.stderr)
+                sys.exit(1)
+        elif arg.startswith('--host='):
+            host_val = arg.split('=', 1)[1]
+            i += 1
+        elif arg.startswith('--'):
+            flags.append(arg)
+            i += 1
+        elif '=' in arg:
+            user_settings.append(arg)
+            i += 1
+        else:
+            print(f"Warning: Unknown argument ignored: {arg}", file=sys.stderr)
+            i += 1
+            
+    if not os.path.exists(staging_file):
+        print(f"Error: Staging file not found: {staging_file}", file=sys.stderr)
+        sys.exit(1)
+        
+    staging_blocks = parse_staging_file(staging_file)
+    
+    # Resolve factory templates folder
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    factory_dir = os.path.join(script_dir, "examples", "factory")
+    if not os.path.isdir(factory_dir):
+        factory_dir = os.path.join(os.getcwd(), "examples", "factory")
+        
+    # Map flags to template files
+    flavor_templates = {
+        '--base': 'base-openqa.cmd',
+        '--jeos': 'jeos-openqa.cmd',
+        '--microos': 'microos-openqa.cmd',
+        '--microos-qcow': 'microos-qcow-openqa.cmd',
+        '--net-agama': 'net-agama-openqa.cmd'
+    }
+    
+    # If no flags specified, enable all
+    enabled_templates = []
+    if not flags:
+        enabled_templates = [
+            ('--base', 'base-openqa.cmd'),
+            ('--jeos', 'jeos-openqa.cmd'),
+            ('--microos', 'microos-openqa.cmd'),
+            ('--microos-qcow', 'microos-qcow-openqa.cmd'),
+            ('--net-agama', 'net-agama-openqa.cmd'
+        )]
+    else:
+        for flag in flags:
+            if flag in flavor_templates:
+                enabled_templates.append((flag, flavor_templates[flag]))
+            else:
+                print(f"Warning: Unknown flag ignored: {flag}", file=sys.stderr)
+                
+    if not enabled_templates:
+        print("Error: No valid flavor flags specified.", file=sys.stderr)
+        sys.exit(1)
+        
+    outputs = []
+    for flag, template_name in enabled_templates:
+        template_path = os.path.join(factory_dir, template_name)
+        if not os.path.exists(template_path):
+            print(f"Error: Template not found: {template_path}", file=sys.stderr)
+            sys.exit(1)
+            
+        processed_content = process_factory_file(template_path, staging_blocks, user_build_tag, template_name, user_settings, host_val)
+        outputs.append(processed_content)
+        
+    # Print the outputs separated by double newlines if multiple, otherwise print the single one
+    # Note: templates already end with a newline, so we just join them with a double newline or print
+    print('\n\n'.join(outputs))
+
+if __name__ == '__main__':
+    main()
