@@ -120,7 +120,7 @@ __DATA__
 
 
 @@ filter-list-sieve.ep
-# Rule $rule_name 
+# Rule $rule_name
 # Search: "filters"
 if allof(
   not string :is "${stop}" "Y",
