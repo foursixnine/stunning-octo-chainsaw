@@ -11,15 +11,6 @@ BEGIN {
     };
 }
 
-package Utils;
-use Mojo::Base -strict;
-
-sub inspect {
-    use Data::Dumper;
-    my $var = shift;
-    say Dumper($var);
-}
-
 package Task::Runner;
 use Mojo::Base -signatures, -base;
 
@@ -45,10 +36,10 @@ sub setup {
     _run('setup', @args);
 }
 
-sub teardown {
+sub shutdown {
     my ($self) = @_;
     my @args = $self->task->command->@*;
-    _run('teardown', @args);
+    _run('shutdown', @args);
 }
 
 sub run {
@@ -82,12 +73,12 @@ use Mojo::Base 'Task::Runner::AbstractExecutor', -signatures, -base, -role;
 
 has name => __PACKAGE__;
 
-requires qw(run setup teardown);
+requires qw(run setup shutdown);
 
 sub execute($self){
     $self->setup;
     $self->run;
-    $self->teardown;
+    $self->shutdown;
 }
 
 package Task::AbstractTask;
@@ -102,7 +93,7 @@ use Mojo::Base 'Task::AbstractTask', -signatures, -base;
 
 has name => "My bash task";
 has command => sub {
-    ['/bin/bash', '-c', 'echo "running phase: $1"']
+    ['bash', '-c', 'echo "running phase: $1"']
 };
 
 1;
