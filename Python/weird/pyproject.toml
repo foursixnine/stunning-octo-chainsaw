@@ -1,0 +1,23 @@
+[project]
+name = "weird"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Santiago Zarate", email = "santiago@zarate.co" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "ruff>=0.16.4",
+    "ty>=0.0.74",
+]
+
+[project.scripts]
+weird = "weird.script:main"
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

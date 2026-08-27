@@ -35,7 +35,11 @@ inc/
 /*.zip
 
 .token
+.env
 
 **/target/**
 mail-rules/*.json
 **/.tidyall.d/
+
+## Python stuff
+**/__pycache__
