@@ -43,3 +43,7 @@ mail-rules/*.json
 
 ## Python stuff
 **/__pycache__
+
+# Ignore python test-bench specific files
+Python/**/uv.lock 
+Python/**/.python-version
