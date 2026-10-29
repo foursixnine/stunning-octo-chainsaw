@@ -60,7 +60,10 @@ sub run_phase ($self, $phase) {
 
     system @argv;
 
-    my $exit = $? >> 8;
+    my $status = $?;
+    die "Failed to execute command: $!" if $status == -1;
+    die "Command terminated by signal " . ($status & 127) if $status & 127;
+    my $exit = $status >> 8;
     die "Command failed with exit code $exit" if $exit != 0;
 
     return $exit;
